@@ -1,6 +1,6 @@
-# ApiHub Python Client
+# Unstract API Hub Python Client
 
-A Python client for the ApiHub service that provides a clean, Pythonic interface for document processing APIs following the extract → status → retrieve pattern.
+A Python client for the Unstract ApiHub service that provides a clean, Pythonic interface for document processing APIs following the extract → status → retrieve pattern.
 
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -11,7 +11,7 @@ A Python client for the ApiHub service that provides a clean, Pythonic interface
 
 ## 🚀 Features
 
-- **Simple API Interface**: Clean, easy-to-use client for ApiHub services
+- **Simple API Interface**: Clean, easy-to-use client for Unstract ApiHub services
 - **File Processing**: Support for document processing with file uploads
 - **Status Monitoring**: Track processing status with polling capabilities
 - **Error Handling**: Comprehensive exception handling with meaningful messages

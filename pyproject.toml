@@ -143,7 +143,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Unstract/apihub-python-client"
-Documentation = "https://apihub-python-client.readthedocs.io/"
-Repository = "https://github.com/Unstract/apihub-python-client"
-"Bug Tracker" = "https://github.com/Unstract/apihub-python-client/issues"
+Homepage = "https://github.com/Zipstack/apihub-python-client"
+Documentation = "https://github.com/Zipstack/apihub-python-clien"
+Repository = "https://github.com/Zipstack/apihub-python-client"
+"Bug Tracker" = "https://github.com/Zipstack/apihub-python-client/issues"
