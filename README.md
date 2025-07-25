@@ -74,11 +74,11 @@ print(result)
     )
     file_hash = initial_result.get("file_hash")
     print("File hash", file_hash)
-    discover_tables_result = client.wait_for_complete(file_hash, 
+    discover_tables_result = client.wait_for_complete(file_hash,
         timeout=600, # max wait for 10 mins
         polling_interval=3 # polling every 3s
     )
-    
+
     tables = json.loads(discover_tables_result['data'])
     print(f"Total tables in this document: {len(tables)}")
 
@@ -86,7 +86,7 @@ print(result)
     # Step 2: Extract specific table
     for i, table in enumerate(tables):
         table_result = client.extract(
-            endpoint="extract_table", 
+            endpoint="extract_table",
             vertical="table",
             sub_vertical="extract_table",
             file_hash=file_hash,
@@ -98,7 +98,7 @@ print(result)
         all_table_result.append({table["table_name"]: table_result})
 
     print("All table result")
-    print(all_table_result)    
+    print(all_table_result)
 
 ```
 
@@ -108,7 +108,7 @@ print(result)
 # Process bank statement
 result = client.extract(
     endpoint="bank_statement",
-    vertical="table", 
+    vertical="table",
     sub_vertical="bank_statement",
     file_path="bank_statement.pdf",
     wait_for_completion=True,
@@ -118,15 +118,13 @@ result = client.extract(
 print("Bank statement processed:", result)
 ```
 
-
-
 ### Step-by-Step Processing
 
 ```python
 # Step 1: Start processing
 initial_result = client.extract(
     endpoint="discover_tables",
-    vertical="table", 
+    vertical="table",
     sub_vertical="discover_tables",
     file_path="document.pdf"
 )
@@ -157,7 +155,7 @@ Once a file has been processed, you can reuse it by file hash:
 table_result = client.extract(
     endpoint="extract_table",
     vertical="table",
-    sub_vertical="extract_table", 
+    sub_vertical="extract_table",
     file_hash="previously-obtained-hash",
     ext_table_no=1,  # Extract second table. Indexing starts at 0
     wait_for_completion=True
@@ -202,6 +200,7 @@ client = ApiHubClient(api_key: str, base_url: str)
 ```
 
 **Parameters:**
+
 - `api_key` (str): Your API key for authentication
 - `base_url` (str): The base URL of the ApiHub service
 
@@ -225,8 +224,9 @@ extract(
 ```
 
 **Parameters:**
+
 - `endpoint` (str): The API endpoint to call (e.g., "discover_tables", "extract_table")
-- `vertical` (str): The processing vertical 
+- `vertical` (str): The processing vertical
 - `sub_vertical` (str): The processing sub-vertical
 - `file_path` (str, optional): Path to file for upload (for new files)
 - `file_hash` (str, optional): Hash of previously uploaded file (for cached operations)
@@ -235,6 +235,7 @@ extract(
 - `**kwargs`: Additional parameters specific to the endpoint
 
 **Returns:**
+
 - `dict`: API response containing processing results or file hash for tracking
 
 ##### get_status()
@@ -246,9 +247,11 @@ get_status(file_hash: str) -> dict
 ```
 
 **Parameters:**
+
 - `file_hash` (str): The file hash returned from extract()
 
 **Returns:**
+
 - `dict`: Status information including current processing state
 
 ##### retrieve()
@@ -260,9 +263,11 @@ retrieve(file_hash: str) -> dict
 ```
 
 **Parameters:**
+
 - `file_hash` (str): The file hash of the completed job
 
 **Returns:**
+
 - `dict`: Final processing results
 
 ##### wait_for_complete()
@@ -278,14 +283,17 @@ wait_for_complete(
 ```
 
 **Parameters:**
+
 - `file_hash` (str): The file hash of the job to wait for
 - `timeout` (int): Maximum time to wait in seconds (default: 600)
 - `polling_interval` (int): Seconds between status checks (default: 3)
 
 **Returns:**
+
 - `dict`: Final processing results when completed
 
 **Raises:**
+
 - `ApiHubClientException`: If processing fails or times out
 
 ### Exception Handling
@@ -313,7 +321,7 @@ from pathlib import Path
 
 def process_documents(file_paths, endpoint):
     results = []
-    
+
     for file_path in file_paths:
         try:
             print(f"Processing {file_path}...")
@@ -324,7 +332,7 @@ def process_documents(file_paths, endpoint):
                 sub_vertical=endpoint,
                 file_path=file_path
             )
-            
+
             # Wait for completion with custom settings
             result = client.wait_for_complete(
                 file_hash=initial_result["file_hash"],
@@ -332,11 +340,11 @@ def process_documents(file_paths, endpoint):
                 polling_interval=5  # Less frequent polling for batch
             )
             results.append({"file": file_path, "result": result, "success": True})
-            
+
         except ApiHubClientException as e:
             print(f"Failed to process {file_path}: {e.message}")
             results.append({"file": file_path, "error": str(e), "success": False})
-    
+
     return results
 
 # Process multiple files
@@ -378,7 +386,7 @@ For integration tests with a real API:
 cp .env.example .env
 # Edit .env with your API credentials
 
-# Run integration tests  
+# Run integration tests
 pytest test/test_integration.py -v
 ```
 
@@ -412,6 +420,7 @@ This project uses automated releases through GitHub Actions with PyPI Trusted Pu
 3. **Click "Run workflow"** - the automation handles the rest!
 
 The workflow will automatically:
+
 - Update version in the code
 - Create Git tags and GitHub releases
 - Run all tests and quality checks
@@ -430,17 +439,24 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 git clone https://github.com/Zipstack/apihub-python-client.git
 cd apihub-python-client
 
-# Install in development mode with all dependencies
-pip install -e ".[dev]"
+# Install dependencies using uv (required - do not use pip)
+uv sync
+
+# Install pre-commit hooks
+uv run --frozen pre-commit install
 
 # Run tests
-pytest
+uv run --frozen pytest
 
-# Run linting
-ruff check .
+# Run linting and formatting
+uv run --frozen ruff check .
+uv run --frozen ruff format .
 
-# Format code  
-ruff format .
+# Run type checking
+uv run --frozen mypy src/
+
+# Run all pre-commit hooks manually
+uv run --frozen pre-commit run --all-files
 ```
 
 ## 📄 License
@@ -456,6 +472,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📈 Version History
 
 ### v0.1.0
+
 - Initial release
 - Basic client functionality with extract, status, and retrieve operations
 - File upload support

@@ -5,6 +5,7 @@ This document contains critical information about working with this codebase. Fo
 ## Core Development Rules
 
 1. Package Management
+
    - ONLY use uv, NEVER pip
    - Installation: `uv add package`
    - Running tools: `uv run tool`
@@ -12,6 +13,7 @@ This document contains critical information about working with this codebase. Fo
    - FORBIDDEN: `uv pip install`, `@latest` syntax
 
 2. Code Quality
+
    - Type hints required for all code
    - Functions must be focused and small
    - Follow existing patterns exactly
@@ -22,7 +24,6 @@ This document contains critical information about working with this codebase. Fo
    - Coverage: test edge cases and errors
    - New features require tests
    - Bug fixes require regression tests
-
 
 ## Python Tools
 
@@ -44,6 +45,7 @@ This document contains critical information about working with this codebase. Fo
 ## Error Resolution
 
 2. Common Issues
+
    - Line length:
      - Break strings with parentheses
      - Multi-line function calls
