@@ -1,5 +1,5 @@
 """
-ApiHub Python Client
+Unstract API Hub Python Client
 
 A dynamic, extensible Python client for the APIHUB service supporting
 any APIs following the extract → status → retrieve pattern.
