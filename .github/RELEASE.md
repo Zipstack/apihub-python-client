@@ -46,7 +46,7 @@ The workflow follows semantic versioning:
 ### What Happens During Release
 
 1. **Version Update**: Updates `__version__` in `src/apihub_client/__init__.py`
-2. **Git Operations**: 
+2. **Git Operations**:
    - Commits version change to main branch
    - Creates and pushes git tag (e.g., `v1.2.3`)
 3. **Quality Checks**:
@@ -67,8 +67,9 @@ And these repository variables:
 - `PUSH_TO_MAIN_APP_ID`: GitHub App ID (can be same as secret)
 
 **PyPI Setup**: This workflow uses PyPI Trusted Publishers with `uv publish` for secure publishing. You need to:
+
 1. Configure the GitHub repository as a trusted publisher on PyPI
-2. Set up the trusted publisher for the `apihub-python-client` package  
+2. Set up the trusted publisher for the `apihub-python-client` package
 3. No API tokens required - `uv publish` automatically handles OIDC authentication
 
 ## Manual Release Workflow
@@ -114,21 +115,25 @@ The `publish-on-release.yml` workflow runs when you manually create a release th
 ### Common Issues
 
 **Workflow fails at version bump:**
+
 - Check that the current version in `__init__.py` follows semantic versioning
 - Ensure the main branch is up to date
 
 **Tests fail during release:**
+
 - Check the latest test results on main branch
 - Fix failing tests before attempting release
 
 **PyPI publish fails:**
-- Verify PyPI Trusted Publisher is configured correctly  
+
+- Verify PyPI Trusted Publisher is configured correctly
 - Check if version already exists on PyPI
 - Ensure package builds successfully locally with `uv build`
 - Verify the repository and workflow file match the trusted publisher configuration
 - Check that `uv publish` has proper OIDC token access (requires `id-token: write` permission)
 
 **Permission errors:**
+
 - Verify GitHub App has necessary permissions
 - Check that secrets and variables are properly configured
 
@@ -180,6 +185,7 @@ To configure PyPI Trusted Publishers:
    - **Environment name**: Leave empty (unless using GitHub environments)
 3. **Save the configuration**
 
-For more details, see: 
+For more details, see:
+
 - https://docs.pypi.org/trusted-publishers/
 - https://docs.astral.sh/uv/guides/publish/#trusted-publishing

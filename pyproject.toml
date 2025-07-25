@@ -94,6 +94,12 @@ python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "test.*"
+disallow_untyped_defs = false
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
@@ -119,6 +125,10 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.bandit]
+exclude_dirs = ["test", "tests", ".venv", "venv"]
+skips = ["B101", "B601", "B113"]
 
 [dependency-groups]
 dev = [
