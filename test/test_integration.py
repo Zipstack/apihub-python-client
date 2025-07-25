@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 import requests_mock
+
 from apihub_client.client import ApiHubClient, ApiHubClientException
 
 

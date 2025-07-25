@@ -4,6 +4,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 import requests_mock
+
 from apihub_client.client import ApiHubClient
 
 
