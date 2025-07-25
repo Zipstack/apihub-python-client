@@ -72,8 +72,8 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         id: create_release
         run: |
-          # Get current version from __init__.py
-          CURRENT_VERSION=$(python -c "import sys; sys.path.insert(0, 'src'); from apihub_client import __version__; print(__version__)")
+          # Get current version from __init__.py using grep/sed (avoid importing)
+          CURRENT_VERSION=$(grep -E "^__version__ = " src/apihub_client/__init__.py | sed -E 's/__version__ = "(.*)"/\1/')
           echo "Current version: $CURRENT_VERSION"
 
           # Calculate new version based on input
@@ -141,7 +141,7 @@ jobs:
       # Verify the version was updated correctly
       - name: Verify version update
         run: |
-          PACKAGE_VERSION=$(python -c "import sys; sys.path.insert(0, 'src'); from apihub_client import __version__; print(__version__)")
+          PACKAGE_VERSION=$(grep -E "^__version__ = " src/apihub_client/__init__.py | sed -E 's/__version__ = "(.*)"/\1/')
           echo "Package version: $PACKAGE_VERSION"
           echo "Target version: ${{ steps.version.outputs.version }}"
           if [ "$PACKAGE_VERSION" != "${{ steps.version.outputs.version }}" ]; then
