@@ -3,7 +3,7 @@
 A Python client for the Unstract ApiHub service that provides a clean, Pythonic interface for document processing APIs following the extract → status → retrieve pattern.
 
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://python.org)
-[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://pypi.org/project/apihub-python-client/)
+[![PyPI Version](https://img.shields.io/pypi/v/apihub-python-client)](https://pypi.org/project/apihub-python-client/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/Zipstack/apihub-python-client)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/apihub-python-client)](https://pypi.org/project/apihub-python-client/)
