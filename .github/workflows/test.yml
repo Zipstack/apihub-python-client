@@ -1,0 +1,143 @@
+name: Run tox tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+        test-env: ["py312", "lint"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.6.14"
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Cache tox environments
+        uses: actions/cache@v4
+        with:
+          path: .tox/
+          key: ${{ runner.os }}-tox-${{ matrix.test-env }}-${{ hashFiles('**/pyproject.toml', '**/tox.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-tox-${{ matrix.test-env }}-
+            ${{ runner.os }}-tox-
+
+      - name: Install tox with UV
+        run: uv tool install tox
+
+      - name: Create test env
+        shell: bash
+        run: |
+          cp .env.example .env
+          sed -i "s|API_KEY=your_api_key_here|API_KEY=${{ secrets.API_KEY || 'test_api_key' }}|" .env
+          sed -i "s|BASE_URL=https://api.example.com|BASE_URL=${{ secrets.BASE_URL || 'https://api.test.com' }}|" .env
+
+      - name: Run tox environment
+        id: tox
+        run: |
+          tox -e ${{ matrix.test-env }}
+
+      - name: Generate test report
+        if: matrix.test-env == 'py312'
+        shell: bash
+        run: |
+          echo "# 🧪 Test Report" > apihub-client-test-report.md
+          echo "" >> apihub-client-test-report.md
+          echo "## Test Results" >> apihub-client-test-report.md
+          echo "" >> apihub-client-test-report.md
+
+          echo "### Test Environment" >> apihub-client-test-report.md
+          echo "" >> apihub-client-test-report.md
+          echo "- **Python Version:** ${{ matrix.python-version }}" >> apihub-client-test-report.md
+          echo "- **OS:** Ubuntu Latest" >> apihub-client-test-report.md
+          echo "- **Tox Environment:** ${{ matrix.test-env }}" >> apihub-client-test-report.md
+          echo "" >> apihub-client-test-report.md
+
+          echo "### Status" >> apihub-client-test-report.md
+          echo "" >> apihub-client-test-report.md
+          if [ ${{ steps.tox.outcome }} == "success" ]; then
+            echo "✅ All tests passed successfully!" >> apihub-client-test-report.md
+          else
+            echo "❌ Some tests failed. Please check the logs above." >> apihub-client-test-report.md
+          fi
+
+      - name: Run coverage separately
+        if: matrix.test-env == 'py312'
+        run: |
+          uv run --frozen pytest test/test_client.py test/test_integration.py --cov=src/apihub_client --cov-report=xml --cov-report=html --cov-fail-under=85
+
+      - name: Render the report to the PR
+        if: matrix.test-env == 'py312' && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: apihub-client-test-report
+          recreate: true
+          path: apihub-client-test-report.md
+
+      - name: Output reports to the job summary
+        if: matrix.test-env == 'py312'
+        shell: bash
+        run: |
+          if [ -f "apihub-client-test-report.md" ]; then
+            {
+              echo "<details><summary>ApiHub Client Test Report</summary>"
+              echo ""
+              cat "apihub-client-test-report.md"
+              echo ""
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload test artifacts
+        if: always() && matrix.test-env == 'py312'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
+            .coverage
+            apihub-client-test-report.md
+          retention-days: 30
+
+  test-summary:
+    if: always() && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [test]
+
+    steps:
+      - name: Test Summary
+        shell: bash
+        run: |
+          echo "## 📋 Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "✅ **Unit Tests:** Passed" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Linting:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Tests:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "🎉 **Overall Status:** All checks passed! Ready for merge." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Overall Status:** Some checks failed. Please review and fix before merging." >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,63 @@
+name: Publish on Manual Release
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  pypi-publish:
+    name: upload release to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.6.14"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      # Install tox for testing
+      - name: Install tox with UV
+        run: uv tool install tox
+
+      # Create test environment
+      - name: Create test env
+        shell: bash
+        run: |
+          if [ -f ".env.example" ]; then
+            cp .env.example .env
+            sed -i "s|API_KEY=your_api_key_here|API_KEY=test_api_key|" .env
+            sed -i "s|BASE_URL=https://api.example.com|BASE_URL=https://api.test.com|" .env
+          else
+            echo "API_KEY=test_api_key" > .env
+            echo "BASE_URL=https://api.test.com" >> .env
+          fi
+
+      # Run linting
+      - name: Run linting
+        run: tox -e lint
+
+      # Run tests
+      - name: Run tests
+        run: tox -e py312
+
+      - name: Build package
+        run: uv build
+
+      # Publish to PyPI using Trusted Publishers
+      - name: Publish to PyPI
+        run: uv publish
