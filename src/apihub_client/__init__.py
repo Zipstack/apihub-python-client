@@ -6,9 +6,16 @@ any APIs following the extract → status → retrieve pattern.
 """
 
 from .client import ApiHubClient, ApiHubClientException
+from .doc_splitter import DocSplitterClient
+from .generic_client import GenericUnstractClient
 
 __version__ = "0.1.1"
 __author__ = "Unstract Team"
 __email__ = "support@unstract.com"
 
-__all__ = ["ApiHubClient", "ApiHubClientException"]
+__all__ = [
+    "ApiHubClient",
+    "ApiHubClientException",
+    "DocSplitterClient",
+    "GenericUnstractClient",
+]
