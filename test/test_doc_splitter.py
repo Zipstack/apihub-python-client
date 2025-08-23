@@ -55,6 +55,42 @@ class TestDocSplitterClient:
             )
             assert request.headers["apikey"] == "test_api_key"
 
+    def test_upload_success_202_nested_response(self, client, mock_file_content):
+        """Test successful file upload with 202 status and nested response."""
+        with requests_mock.Mocker() as m:
+            # Mock successful upload response with 202 and nested data structure
+            m.post(
+                "http://localhost:8005/api/v1/doc-splitter/documents/upload",
+                json={
+                    "data": {
+                        "filename": "test.pdf",
+                        "job_id": "93bbb7ab-3291-429c-8923-3b179e7ae5bf",
+                        "pages": 2,
+                        "size_bytes": 63580,
+                        "status": "queued",
+                        "upload_timestamp": "2025-08-23T04:28:32.424535Z",
+                        "user_limits": {
+                            "current_jobs": 1,
+                            "jobs_today": 3,
+                            "max_jobs_per_day": 5000,
+                            "max_parallel_jobs": 5,
+                        },
+                    },
+                    "request_id": "eb75ac1e-a224-4624-a4f2-6c813ddc2b3c",
+                    "success": True,
+                    "timestamp": "2025-08-23T04:28:32.424612",
+                },
+                status_code=202,
+            )
+
+            with patch("builtins.open", mock_open(read_data=mock_file_content)):
+                result = client.upload(file_path="/test/document.pdf")
+
+            # Verify we got the nested response structure
+            assert result["data"]["job_id"] == "93bbb7ab-3291-429c-8923-3b179e7ae5bf"
+            assert result["data"]["status"] == "queued"
+            assert result["success"] is True
+
     def test_upload_file_not_found(self, client):
         """Test upload with non-existent file."""
         with patch("builtins.open", side_effect=FileNotFoundError("File not found")):
@@ -316,6 +352,47 @@ class TestDocSplitterClient:
                     client.wait_for_completion("test-job")
 
             assert "Processing failed for job_id: test-job" in exc_info.value.message
+
+    def test_wait_for_completion_nested_response(self, client):
+        """Test wait_for_completion with nested response structure."""
+        with requests_mock.Mocker() as m:
+            # Mock status responses with nested structure (processing, then completed)
+            m.get(
+                "http://localhost:8005/api/v1/doc-splitter/jobs/status?job_id=test-nested",
+                [
+                    {
+                        "json": {
+                            "data": {
+                                "status": "processing",
+                                "job_id": "test-nested",
+                                "current_step": "page_image_gen",
+                            },
+                            "success": True,
+                        },
+                        "status_code": 200,
+                    },
+                    {
+                        "json": {
+                            "data": {
+                                "status": "completed",
+                                "job_id": "test-nested",
+                                "finished_at": "2025-08-23T04:40:00.000000Z",
+                            },
+                            "success": True,
+                        },
+                        "status_code": 200,
+                    },
+                ],
+            )
+
+            with patch("time.sleep") as mock_sleep:
+                result = client.wait_for_completion("test-nested", polling_interval=1)
+
+            # Should successfully complete and return the nested structure
+            assert result["data"]["status"] == "completed"
+            assert result["data"]["job_id"] == "test-nested"
+            assert result["success"] is True
+            mock_sleep.assert_called_with(1)
 
     def test_logging_output(self, client, caplog, mock_file_content):
         """Test that appropriate logging messages are generated."""

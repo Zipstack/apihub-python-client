@@ -67,12 +67,16 @@ class DocSplitterClient:
         self.logger.debug("Request Headers Sent: %s", response.request.headers)
         self.logger.debug("Request URL: %s", response.request.url)
 
-        if response.status_code != 200:
+        if response.status_code not in [200, 202]:
             self.logger.error("Upload failed: %s", response.text)
             raise ApiHubClientException(response.text, response.status_code)
 
         data = response.json()
-        job_id = data.get("job_id")
+        # Extract job_id from the nested data structure
+        if "data" in data and isinstance(data["data"], dict):
+            job_id = data["data"].get("job_id")
+        else:
+            job_id = data.get("job_id")
         self.logger.info("Upload completed successfully. Job ID: %s", job_id)
 
         # If wait_for_completion is True, poll for status and return final result
@@ -171,13 +175,17 @@ class DocSplitterClient:
 
         while time.time() - start_time < timeout:
             status_result = self.get_job_status(job_id)
-            status = status_result.get("status")
+            # Extract status from nested data structure
+            if "data" in status_result and isinstance(status_result["data"], dict):
+                status = status_result["data"].get("status")
+            else:
+                status = status_result.get("status")
             self.logger.info("Current status: %s", status)
 
-            if status == "COMPLETED":
+            if status and status.upper() == "COMPLETED":
                 self.logger.info("Processing completed")
                 return status_result
-            elif status == "FAILED":
+            elif status and status.upper() == "FAILED":
                 self.logger.error("Processing failed")
                 raise ApiHubClientException(
                     f"Processing failed for job_id: {job_id}",
