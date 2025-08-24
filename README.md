@@ -1,6 +1,6 @@
 # Unstract API Hub Python Client
 
-A Python client for the Unstract ApiHub service that provides a clean, Pythonic interface for document processing APIs following the extract → status → retrieve pattern.
+A comprehensive Python client library for Unstract APIHUB services that provides clean, Pythonic interfaces for multiple document processing APIs including table extraction, document splitting, and generic document processing with dynamic endpoints.
 
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://python.org)
 [![PyPI Version](https://img.shields.io/pypi/v/apihub-python-client)](https://pypi.org/project/apihub-python-client/)
@@ -12,13 +12,18 @@ A Python client for the Unstract ApiHub service that provides a clean, Pythonic 
 
 ## 🚀 Features
 
-- **Simple API Interface**: Clean, easy-to-use client for Unstract ApiHub services
-- **File Processing**: Support for document processing with file uploads
+- **Multi-Client Architecture**: Three specialized clients for different use cases
+  - `ApiHubClient`: Table extraction and discovery APIs
+  - `DocSplitterClient`: Document splitting and chunking services
+  - `GenericUnstractClient`: Dynamic endpoint processing (invoice, contract, receipt, etc.)
+- **File Processing**: Support for document processing with file uploads across all clients
 - **Status Monitoring**: Track processing status with polling capabilities
 - **Error Handling**: Comprehensive exception handling with meaningful messages
 - **Flexible Parameters**: Support for custom parameters and configurations
 - **Automatic Polling**: Optional wait-for-completion functionality
 - **Type Safety**: Full type hints for better development experience
+- **Batch Processing**: Built-in support for processing multiple documents
+- **Integration Ready**: Easy integration between different client services
 
 ## 📦 Installation
 
