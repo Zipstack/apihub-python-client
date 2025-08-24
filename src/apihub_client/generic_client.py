@@ -1,5 +1,6 @@
 import logging
 import time
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -31,6 +32,26 @@ class GenericUnstractClient:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.headers = {"apikey": self.api_key}
+
+    def _extract_execution_id_from_url(self, url: str) -> str | None:
+        """
+        Extract execution_id from a URL's query parameters.
+
+        Args:
+            url: URL containing execution_id parameter
+
+        Returns:
+            str | None: The execution_id if found, None otherwise
+        """
+        try:
+            parsed_url = urlparse(url)
+            query_params = parse_qs(parsed_url.query)
+            execution_ids = query_params.get("execution_id")
+            if execution_ids:
+                return execution_ids[0]  # Get the first value
+        except Exception as e:
+            self.logger.warning("Failed to extract execution_id from URL: %s", e)
+        return None
 
     def process(
         self,
@@ -76,6 +97,13 @@ class GenericUnstractClient:
 
         data = response.json()
         execution_id = data.get("execution_id")
+
+        # If execution_id is not directly available, try to extract from status_api
+        if not execution_id:
+            status_api = data.get("message", {}).get("status_api")
+            if status_api:
+                execution_id = self._extract_execution_id_from_url(status_api)
+
         self.logger.info(
             "Processing started successfully. Execution ID: %s", execution_id
         )
@@ -119,7 +147,17 @@ class GenericUnstractClient:
         )
         response = requests.get(url, headers=self.headers, params=params)
 
-        if response.status_code != 200:
+        if response.status_code == 422:
+            # Handle 422 status which may indicate processing in progress
+            try:
+                data = response.json()
+                if "status" in data:
+                    return data
+            except (ValueError, KeyError):
+                # JSON parsing failed or status key missing, treat as error
+                pass
+            raise ApiHubClientException(response.text, response.status_code)
+        elif response.status_code != 200:
             raise ApiHubClientException(response.text, response.status_code)
 
         return response.json()
@@ -170,7 +208,7 @@ class GenericUnstractClient:
                     ),
                     None,
                 )
-            elif status in ["PROCESSING", "IN_PROGRESS", "RUNNING"]:
+            elif status in ["PROCESSING", "IN_PROGRESS", "RUNNING", "EXECUTING"]:
                 # Continue polling
                 pass
             else:
