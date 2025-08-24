@@ -9,7 +9,7 @@ from .client import ApiHubClient, ApiHubClientException
 from .doc_splitter import DocSplitterClient
 from .generic_client import GenericUnstractClient
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 __author__ = "Unstract Team"
 __email__ = "support@unstract.com"
 
