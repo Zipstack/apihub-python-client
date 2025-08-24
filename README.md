@@ -63,6 +63,312 @@ print(result)
 
 ## 🛠️ Common Use Cases
 
+### Document Splitter API
+
+Split documents into smaller parts using the doc-splitter service:
+
+```python
+from apihub_client import DocSplitterClient
+
+# Initialize the doc-splitter client
+doc_client = DocSplitterClient(
+    api_key="your-api-key-here",
+    base_url="http://localhost:8005"
+)
+
+# Simple upload and wait for completion
+result = doc_client.upload(
+    file_path="large_document.pdf",
+    wait_for_completion=True,
+    polling_interval=5  # Check status every 5 seconds
+)
+
+# Download the split result
+output_file = doc_client.download_result(
+    job_id=result["job_id"],
+    output_path="split_result.zip"
+)
+print(f"Downloaded result to: {output_file}")
+```
+
+#### Step-by-Step Doc-Splitter Processing
+
+```python
+# Step 1: Upload document
+upload_result = doc_client.upload(file_path="document.pdf")
+job_id = upload_result["job_id"]
+print(f"Upload completed. Job ID: {job_id}")
+
+# Step 2: Monitor status manually
+status = doc_client.get_job_status(job_id)
+print(f"Current status: {status['status']}")
+
+# Step 3: Wait for completion (with custom timeout)
+final_result = doc_client.wait_for_completion(
+    job_id=job_id,
+    timeout=600,        # Wait up to 10 minutes
+    polling_interval=3  # Check every 3 seconds
+)
+
+# Step 4: Download the processed result
+downloaded_file = doc_client.download_result(
+    job_id=job_id,
+    output_path="processed_document.zip"
+)
+print(f"Processing complete! Downloaded: {downloaded_file}")
+```
+
+#### Batch Processing with Doc-Splitter
+
+```python
+import os
+from pathlib import Path
+
+def process_documents_batch(file_paths):
+    """Process multiple documents with doc-splitter."""
+    results = []
+
+    for file_path in file_paths:
+        try:
+            print(f"Processing {file_path}...")
+
+            # Upload and wait for completion
+            result = doc_client.upload(
+                file_path=file_path,
+                wait_for_completion=True,
+                polling_interval=5
+            )
+
+            # Generate output filename
+            input_name = Path(file_path).stem
+            output_path = f"{input_name}_split.zip"
+
+            # Download result
+            downloaded_file = doc_client.download_result(
+                job_id=result["job_id"],
+                output_path=output_path
+            )
+
+            results.append({
+                "input": file_path,
+                "output": downloaded_file,
+                "job_id": result["job_id"],
+                "success": True
+            })
+
+        except Exception as e:
+            print(f"Failed to process {file_path}: {e}")
+            results.append({
+                "input": file_path,
+                "error": str(e),
+                "success": False
+            })
+
+    return results
+
+# Process multiple files
+files = ["document1.pdf", "document2.pdf", "document3.pdf"]
+results = process_documents_batch(files)
+
+# Summary
+successful = [r for r in results if r["success"]]
+failed = [r for r in results if not r["success"]]
+print(f"Processed: {len(successful)} successful, {len(failed)} failed")
+```
+
+### Generic Unstract API
+
+Process documents using dynamic endpoints like invoice, contract, receipt, etc.:
+
+```python
+from apihub_client import GenericUnstractClient
+
+# Initialize the generic client
+client = GenericUnstractClient(
+    api_key="your-api-key-here",
+    base_url="http://localhost:8005"
+)
+
+# Simple processing with automatic completion waiting
+result = client.process(
+    endpoint="invoice",
+    file_path="invoice.pdf",
+    wait_for_completion=True,
+    polling_interval=5  # Check status every 5 seconds
+)
+print("Invoice processing completed:", result)
+```
+
+#### Step-by-Step Generic API Processing
+
+```python
+# Step 1: Start processing
+process_result = client.process(
+    endpoint="contract",
+    file_path="contract.pdf"
+)
+execution_id = process_result["execution_id"]
+print(f"Processing started. Execution ID: {execution_id}")
+
+# Step 2: Check status manually
+status = client.check_status("contract", execution_id)
+print(f"Current status: {status}")
+
+# Step 3: Wait for completion (with custom timeout)
+final_result = client.wait_for_completion(
+    endpoint="contract",
+    execution_id=execution_id,
+    timeout=600,        # Wait up to 10 minutes
+    polling_interval=3  # Check every 3 seconds
+)
+
+# Step 4: Get result later (if needed)
+result = client.get_result("contract", execution_id)
+print("Processing complete:", result)
+```
+
+#### Batch Processing with Generic APIs
+
+```python
+def process_documents_batch(endpoint, file_paths):
+    """Process multiple documents with the same endpoint."""
+    results = []
+
+    for file_path in file_paths:
+        try:
+            print(f"Processing {file_path} with {endpoint} endpoint...")
+
+            # Process and wait for completion
+            result = client.process(
+                endpoint=endpoint,
+                file_path=file_path,
+                wait_for_completion=True,
+                polling_interval=5
+            )
+
+            results.append({
+                "input": file_path,
+                "execution_id": result["execution_id"],
+                "result": result,
+                "success": True
+            })
+
+        except Exception as e:
+            print(f"Failed to process {file_path}: {e}")
+            results.append({
+                "input": file_path,
+                "error": str(e),
+                "success": False
+            })
+
+    return results
+
+# Process multiple invoices
+invoice_files = ["invoice1.pdf", "invoice2.pdf", "invoice3.pdf"]
+results = process_documents_batch("invoice", invoice_files)
+
+# Process multiple contracts
+contract_files = ["contract1.pdf", "contract2.pdf"]
+contract_results = process_documents_batch("contract", contract_files)
+
+# Summary
+successful = [r for r in results if r["success"]]
+failed = [r for r in results if not r["success"]]
+print(f"Processed: {len(successful)} successful, {len(failed)} failed")
+```
+
+### Integration: Doc-Splitter + Extraction APIs
+
+Combine doc-splitter with extraction APIs for complete document processing:
+
+```python
+from apihub_client import ApiHubClient, DocSplitterClient
+
+# Initialize both clients
+api_client = ApiHubClient(
+    api_key="your-api-key",
+    base_url="https://api-hub.us-central.unstract.com/api/v1"
+)
+
+doc_splitter = DocSplitterClient(
+    api_key="your-api-key",
+    base_url="http://localhost:8005"
+)
+
+# Step 1: Split the large document
+split_result = doc_splitter.upload(
+    file_path="large_contract.pdf",
+    wait_for_completion=True
+)
+
+# Step 2: Download split result
+doc_splitter.download_result(
+    job_id=split_result["job_id"],
+    output_path="split_documents.zip"
+)
+
+# Step 3: Process individual documents (example with one document)
+# (assuming you extract individual PDFs from the zip)
+table_result = api_client.extract(
+    endpoint="bank_statement",
+    vertical="table",
+    sub_vertical="bank_statement",
+    file_path="individual_page.pdf",
+    wait_for_completion=True
+)
+print("Extracted data:", table_result)
+```
+
+### Complete Workflow: All Three Clients
+
+```python
+from apihub_client import ApiHubClient, DocSplitterClient, GenericUnstractClient
+
+# Initialize all clients
+api_client = ApiHubClient(
+    api_key="your-api-key",
+    base_url="https://api-hub.us-central.unstract.com/api/v1"
+)
+
+doc_splitter = DocSplitterClient(
+    api_key="your-api-key",
+    base_url="http://localhost:8005"
+)
+
+generic_client = GenericUnstractClient(
+    api_key="your-api-key",
+    base_url="http://localhost:8005"
+)
+
+# Workflow: Split → Extract → Process with Generic API
+# Step 1: Split large document
+split_result = doc_splitter.upload(
+    file_path="large_document.pdf",
+    wait_for_completion=True
+)
+
+# Step 2: Extract tables from split documents
+# (after extracting individual files from the zip)
+table_result = api_client.extract(
+    endpoint="discover_tables",
+    vertical="table",
+    sub_vertical="discover_tables",
+    file_path="split_page_1.pdf",
+    wait_for_completion=True
+)
+
+# Step 3: Process with generic invoice API
+invoice_result = generic_client.process(
+    endpoint="invoice",
+    file_path="split_page_2.pdf",
+    wait_for_completion=True
+)
+
+print("Complete workflow finished!")
+print("Tables extracted:", len(table_result.get('data', [])))
+print("Invoice processed:", invoice_result.get('execution_id'))
+```
+
 ### All Table Extraction API
 
 ```python
@@ -208,6 +514,32 @@ client = ApiHubClient(api_key: str, base_url: str)
 - `api_key` (str): Your API key for authentication
 - `base_url` (str): The base URL of the ApiHub service
 
+### DocSplitterClient
+
+Client for interacting with doc-splitter APIs for document splitting operations.
+
+```python
+doc_client = DocSplitterClient(api_key: str, base_url: str)
+```
+
+**Parameters:**
+
+- `api_key` (str): Your API key for authentication
+- `base_url` (str): The base URL of the doc-splitter service
+
+### GenericUnstractClient
+
+Client for interacting with generic Unstract APIs using dynamic endpoints.
+
+```python
+generic_client = GenericUnstractClient(api_key: str, base_url: str)
+```
+
+**Parameters:**
+
+- `api_key` (str): Your API key for authentication
+- `base_url` (str): The base URL of the Unstract service
+
 #### Methods
 
 ##### extract()
@@ -300,18 +632,200 @@ wait_for_complete(
 
 - `ApiHubClientException`: If processing fails or times out
 
-### Exception Handling
+#### DocSplitterClient Methods
+
+##### upload()
+
+Upload a document for splitting.
 
 ```python
-from apihub_client import ApiHubClientException
+upload(
+    file_path: str,
+    wait_for_completion: bool = False,
+    polling_interval: int = 5,
+) -> dict
+```
+
+**Parameters:**
+
+- `file_path` (str): Path to the file to upload
+- `wait_for_completion` (bool): If True, polls until completion and returns final result
+- `polling_interval` (int): Seconds between status checks when waiting (default: 5)
+
+**Returns:**
+
+- `dict`: Response containing job_id and status information
+
+##### get_job_status()
+
+Check the status of a splitting job.
+
+```python
+get_job_status(job_id: str) -> dict
+```
+
+**Parameters:**
+
+- `job_id` (str): The job ID to check status for
+
+**Returns:**
+
+- `dict`: Status information including current processing state
+
+##### download_result()
+
+Download the result of a completed splitting job.
+
+```python
+download_result(
+    job_id: str,
+    output_path: str | None = None
+) -> str
+```
+
+**Parameters:**
+
+- `job_id` (str): The job ID to download results for
+- `output_path` (str, optional): Path where to save the downloaded file. If None, uses 'result\_{job_id}.zip'
+
+**Returns:**
+
+- `str`: Path to the downloaded file
+
+##### wait_for_completion()
+
+Wait for a splitting job to complete by polling its status.
+
+```python
+wait_for_completion(
+    job_id: str,
+    timeout: int = 600,
+    polling_interval: int = 3
+) -> dict
+```
+
+**Parameters:**
+
+- `job_id` (str): The job ID to wait for
+- `timeout` (int): Maximum time to wait in seconds (default: 600)
+- `polling_interval` (int): Seconds between status checks (default: 3)
+
+**Returns:**
+
+- `dict`: Final job status information when completed
+
+**Raises:**
+
+- `ApiHubClientException`: If processing fails or times out
+
+#### GenericUnstractClient Methods
+
+##### process()
+
+Process a document using the specified endpoint.
+
+```python
+process(
+    endpoint: str,
+    file_path: str,
+    wait_for_completion: bool = False,
+    polling_interval: int = 5,
+    timeout: int = 600,
+) -> dict
+```
+
+**Parameters:**
+
+- `endpoint` (str): The endpoint name (e.g., 'invoice', 'contract', 'receipt')
+- `file_path` (str): Path to the file to upload
+- `wait_for_completion` (bool): If True, polls until completion and returns final result
+- `polling_interval` (int): Seconds between status checks when waiting (default: 5)
+- `timeout` (int): Maximum time to wait for completion in seconds (default: 600)
+
+**Returns:**
+
+- `dict`: Response containing execution_id and processing information
+
+##### get_result()
+
+Get the result of a processing operation.
+
+```python
+get_result(endpoint: str, execution_id: str) -> dict
+```
+
+**Parameters:**
+
+- `endpoint` (str): The endpoint name used for processing
+- `execution_id` (str): The execution ID to get results for
+
+**Returns:**
+
+- `dict`: Processing result or status information
+
+##### wait_for_completion()
+
+Wait for a processing operation to complete by polling its status.
+
+```python
+wait_for_completion(
+    endpoint: str,
+    execution_id: str,
+    timeout: int = 600,
+    polling_interval: int = 3,
+) -> dict
+```
+
+**Parameters:**
+
+- `endpoint` (str): The endpoint name used for processing
+- `execution_id` (str): The execution ID to wait for
+- `timeout` (int): Maximum time to wait in seconds (default: 600)
+- `polling_interval` (int): Seconds between status checks (default: 3)
+
+**Returns:**
+
+- `dict`: Final processing result when completed
+
+##### check_status()
+
+Check the current status of a processing operation.
+
+```python
+check_status(endpoint: str, execution_id: str) -> str | None
+```
+
+**Parameters:**
+
+- `endpoint` (str): The endpoint name used for processing
+- `execution_id` (str): The execution ID to check status for
+
+**Returns:**
+
+- `str | None`: Current status string, or None if not available
+
+**Raises:**
+
+- `ApiHubClientException`: If processing fails or times out
+
+### Exception Handling
+
+All clients (`ApiHubClient`, `DocSplitterClient`, and `GenericUnstractClient`) use the same exception handling:
+
+```python
+from apihub_client import ApiHubClientException, GenericUnstractClient
+
+generic_client = GenericUnstractClient(api_key="key", base_url="http://localhost:8005")
 
 try:
-    result = client.extract(
-        endpoint="bank_statement",
-        vertical="table",
-        sub_vertical="bank_statement",
-        file_path="document.pdf"
+    result = generic_client.process(
+        endpoint="invoice",
+        file_path="invoice.pdf",
+        wait_for_completion=True
     )
+
+    print("Processing completed:", result["execution_id"])
+
 except ApiHubClientException as e:
     print(f"Error: {e.message}")
     print(f"Status Code: {e.status_code}")

@@ -5,7 +5,6 @@ from unittest.mock import mock_open, patch
 
 import pytest
 import requests_mock
-
 from apihub_client.client import ApiHubClient, ApiHubClientException
 
 
@@ -427,3 +426,64 @@ class TestApiHubClient:
             # Should have completed quickly due to short polling interval
             assert (end_time - start_time) < 2.0  # Should complete within 2 seconds
             assert result["result"] == "final_data"
+
+    def test_wait_for_complete_standalone_success(self, client):
+        """Test wait_for_complete method called standalone."""
+        with requests_mock.Mocker() as m:
+            # Mock status responses (first PROCESSING, then COMPLETED)
+            m.get(
+                "https://api.test.com/status?file_hash=standalone_hash",
+                [
+                    {"json": {"status": "PROCESSING"}, "status_code": 200},
+                    {"json": {"status": "COMPLETED"}, "status_code": 200},
+                ],
+            )
+
+            # Mock retrieve response
+            m.get(
+                "https://api.test.com/retrieve?file_hash=standalone_hash",
+                json={
+                    "file_hash": "standalone_hash",
+                    "status": "COMPLETED",
+                    "result": {"data": "standalone_result"},
+                },
+                status_code=200,
+            )
+
+            with patch("time.sleep") as mock_sleep:
+                result = client.wait_for_complete(
+                    "standalone_hash", timeout=300, polling_interval=2
+                )
+
+            assert result["status"] == "COMPLETED"
+            assert result["result"]["data"] == "standalone_result"
+            mock_sleep.assert_called_with(2)
+
+    def test_wait_for_complete_timeout_exception(self, client):
+        """Test wait_for_complete method timeout exception."""
+        with requests_mock.Mocker() as m:
+            # Mock status responses that never complete
+            m.get(
+                "https://api.test.com/status?file_hash=timeout_hash",
+                json={"status": "PROCESSING"},
+                status_code=200,
+            )
+
+            with patch("time.sleep"):
+                # Use return_value instead of side_effect for timeout simulation
+                with patch("time.time") as mock_time:
+                    # First call returns 0, subsequent calls return 601 (timeout)
+                    mock_time.side_effect = [0, 601]
+                    with pytest.raises(ApiHubClientException) as exc_info:
+                        client.wait_for_complete("timeout_hash", timeout=600)
+
+            assert "Timeout waiting for completion" in exc_info.value.message
+            assert "timeout_hash" in exc_info.value.message
+            assert exc_info.value.status_code is None
+
+    def test_client_initialization_with_trailing_slash(self):
+        """Test client initialization removes trailing slash from base_url."""
+        client = ApiHubClient(api_key="test_key", base_url="https://api.test.com/")
+        assert client.base_url == "https://api.test.com"
+        assert client.api_key == "test_key"
+        assert client.headers == {"apikey": "test_key"}

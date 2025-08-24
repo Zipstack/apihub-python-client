@@ -65,3 +65,5 @@ This document contains critical information about working with this codebase. Fo
    - Follow existing patterns
    - Test thoroughly
    - Use Context7 mcp server if available to get latest documents.
+
+- Don't mention claude code any where in code, commit messages or in PR description or comment

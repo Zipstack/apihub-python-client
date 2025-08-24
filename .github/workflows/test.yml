@@ -79,7 +79,7 @@ jobs:
       - name: Run coverage separately
         if: matrix.test-env == 'py312'
         run: |
-          uv run --frozen pytest test/test_client.py test/test_integration.py --cov=src/apihub_client --cov-report=xml --cov-report=html --cov-fail-under=85
+          uv run --frozen pytest test/ --cov=src/apihub_client --cov-report=xml --cov-report=html --cov-fail-under=85
 
       - name: Render the report to the PR
         if: matrix.test-env == 'py312' && github.event_name == 'pull_request'
